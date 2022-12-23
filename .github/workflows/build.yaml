@@ -1,0 +1,36 @@
+name: Build and Publish the Docs
+
+# This GH recipe uses a base container image with all dependencies in 
+# place (rpsene/riscv-doc-image:latest) as the host for building the 
+# documentation.
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-docs-whitin-containers:
+    name: Build the docs from within a container
+    runs-on: ubuntu-latest
+    container: 
+      image: rpsene/riscv-doc-image:latest
+      options: --user root
+    steps:
+      - name: Cloning Source Code
+        uses: actions/checkout@v3
+        with:
+          repository: 'riscv/riscv-crypto'
+      - name: Building
+        run:  |
+          ls -la
+          git config --global --add safe.directory /__w/riscv-crypto-docs/riscv-crypto-docs
+          make -C doc/vector
+          ls doc/vector
+      - name: Set current date as env variable
+        run: echo "NOW=$(date +'%m%d%Y')" >> $GITHUB_ENV
+      - name: Archive Doc Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: "doc-artifacts-${{ env.NOW }}"
+          path: doc/vector/*
+          if-no-files-found: error
